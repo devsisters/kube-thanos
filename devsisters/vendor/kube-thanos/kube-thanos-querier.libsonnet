@@ -12,6 +12,16 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
       image:: $.thanos.image,
       replicas:: 1,
       replicaLabel:: 'prometheus_replica',
+      resources:: {
+        requests:: {
+          memory:: '100Mi',
+          cpu:: '50m',
+        },
+        limits:: {
+          memory:: '200Mi',
+          cpu:: '100m',
+        },
+      },
 
       service:
         local service = k.core.v1.service;
@@ -33,6 +43,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
         local container = deployment.mixin.spec.template.spec.containersType;
         local affinity = deployment.mixin.spec.template.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecutionType;
         local matchExpression = affinity.mixin.podAffinityTerm.labelSelector.matchExpressionsType;
+
 
         local c =
           container.new($.thanos.querier.deployment.metadata.name, tq.image) +
@@ -57,7 +68,15 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
           container.mixin.readinessProbe.withFailureThreshold(20) +
           container.mixin.readinessProbe.httpGet.withPort($.thanos.querier.service.spec.ports[1].port) +
           container.mixin.readinessProbe.httpGet.withScheme('HTTP') +
-          container.mixin.readinessProbe.httpGet.withPath('/-/ready');
+          container.mixin.readinessProbe.httpGet.withPath('/-/ready') +
+          container.mixin.resources.withLimits({
+            memory: tq.resources.limits.memory,
+            cpu: tq.resources.limits.cpu,
+          }) +
+          container.mixin.resources.withRequests({
+            memory: tq.resources.requests.memory,
+            cpu: tq.resources.requests.cpu,
+          });
 
         deployment.new(tq.name, tq.replicas, c, $.thanos.querier.deployment.metadata.labels) +
         deployment.mixin.metadata.withNamespace(tq.namespace) +

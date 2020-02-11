@@ -58,4 +58,11 @@ spec:
             port: 9090
             scheme: HTTP
           periodSeconds: 5
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 100Mi
       terminationGracePeriodSeconds: 120
